@@ -30,14 +30,18 @@ int main(int argc, char **argv) {
   const std::unique_ptr<HttpRequestParser::HttpRequest> httpRequest =
       HttpRequestParser::parse(httpRawRequest);
 
-  std::regex echoPathRegex("^/echo/([^/]+)$");
+  // std::cout << "REQUEST: \n" << *httpRequest << "\nEND\n";
+
+  std::regex echoPathEndpointRegex("^/echo/([^/]+)$");
+  std::regex userAgentEndpointRegex("/user-agent");
   std::smatch match;
 
   if (httpRequest->path == "/") {
     std::string httpResponse = "HTTP/1.1 200 OK\r\n\r\n";
     client.repond(httpResponse);
 
-  } else if (std::regex_search(httpRequest->path, match, echoPathRegex)) {
+  } else if (std::regex_search(httpRequest->path, match,
+                               echoPathEndpointRegex)) {
     std::string body;
 
     for (auto it = match.begin() + 1; it != match.end(); ++it) {
@@ -47,6 +51,14 @@ int main(int argc, char **argv) {
     std::string httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: "
                                "text/plain\r\nContent-Length: ";
     httpResponse += std::to_string(body.size()) + "\r\n\r\n" + body;
+
+    client.repond(httpResponse);
+  } else if (std::regex_search(httpRequest->path, match,
+                               userAgentEndpointRegex)) {
+    const std::string &userAgent = httpRequest->headers["User-Agent"];
+    std::string httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: "
+                               "text/plain\r\nContent-Length: ";
+    httpResponse += std::to_string(userAgent.size()) + "\r\n\r\n" + userAgent;
 
     client.repond(httpResponse);
   } else {
