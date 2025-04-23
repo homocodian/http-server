@@ -5,6 +5,8 @@
 #include <netdb.h>
 #include <string>
 
+#define BUFFER_SIZE 4096
+
 class Client {
 private:
   struct sockaddr_in client_addr;
@@ -15,6 +17,7 @@ public:
   Client();
   int acceptConnection(int server_fd);
   void repond(std::string response);
+  std::string readRequest();
   ~Client();
 };
 

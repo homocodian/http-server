@@ -49,5 +49,5 @@ void Server::listenSocket(int connection_backlog) {
 
 Server::~Server() {
   close(server_fd);
-  std::cout << "Server closed\n";
+  // std::cout << "Server destroyed\n";
 }

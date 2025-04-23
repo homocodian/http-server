@@ -1,6 +1,9 @@
 #include "client.h"
+#include "http_request_parser.h"
 #include "server.h"
 #include <iostream>
+#include <memory>
+#include <string>
 
 int main(int argc, char **argv) {
   // Flush after every std::cout / std::cerr
@@ -21,9 +24,19 @@ int main(int argc, char **argv) {
 
   int client_fd = client.acceptConnection(server_fd);
 
-  std::string http_response = "HTTP/1.1 200 OK\r\n\r\n";
+  const std::string httpRawRequest = client.readRequest();
 
-  client.repond(http_response);
+  const std::unique_ptr<HttpRequestParser::HttpRequest> httpRequest =
+      HttpRequestParser::parse(httpRawRequest);
+
+  if (httpRequest->path == "/") {
+    std::string httpResponse = "HTTP/1.1 200 OK\r\n\r\n";
+    client.repond(httpResponse);
+
+  } else {
+    std::string httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
+    client.repond(httpResponse);
+  }
 
   std::cout << "Client connected\n";
 

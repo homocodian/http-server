@@ -22,11 +22,18 @@ int Client::acceptConnection(int server_fd) {
   return client_fd;
 }
 
+std::string Client::readRequest() {
+  char buffer[BUFFER_SIZE];
+  read(client_fd, buffer, BUFFER_SIZE);
+
+  return buffer;
+}
+
 void Client::repond(std::string response) {
   send(client_fd, response.c_str(), response.length(), 0);
 }
 
 Client::~Client() {
   close(client_fd);
-  std::cout << "Client closed\n";
+  // std::cout << "Client closed\n";
 }
