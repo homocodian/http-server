@@ -5,18 +5,18 @@
 #include <netdb.h>
 #include <string>
 
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 1024
 
 class Client {
 private:
-  struct sockaddr_in client_addr;
+  struct sockaddr_in client_addr = {};
   int client_addr_len;
-  int client_fd;
+  int client_fd = -1;
 
 public:
   Client();
   int acceptConnection(int server_fd);
-  void repond(std::string response);
+  void repond(const std::string response);
   std::string readRequest();
   ~Client();
 };

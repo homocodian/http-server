@@ -22,10 +22,6 @@ HttpRequestParser::parse(const std::string &rawRequest) {
   requestLine >> httpRequest->method >> httpRequest->path >>
       httpRequest->version;
 
-  if (httpRequest->version.rfind("HTTP/", 0) == 0) {
-    httpRequest->version = httpRequest->version.substr(5); // strip HTTP/
-  }
-
   while (std::getline(stream, line) && line != "\r") {
     size_t colon = line.find(":");
 

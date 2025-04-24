@@ -5,8 +5,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-Server::Server(int port)
-    : server_fd(-1), server_addr({}), reuse(-1), port(port) {};
+Server::Server(int port) : port(port) {};
 
 int Server::createServer() {
   server_fd = socket(AF_INET, SOCK_STREAM, 0);

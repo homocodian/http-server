@@ -1,72 +1,79 @@
 #include "client.h"
 #include "http_request_parser.h"
+#include "http_response_builder.h"
 #include "server.h"
+#include "thread_pool.h"
 #include <iostream>
 #include <memory>
 #include <regex>
 #include <string>
 
 int main(int argc, char **argv) {
-  // Flush after every std::cout / std::cerr
-  std::cout << std::unitbuf;
-  std::cerr << std::unitbuf;
-
   Server server(4221);
-
   int server_fd = server.createServer();
-
   server.bindPort();
-
   server.listenSocket();
 
-  Client client;
+  ThreadPool threadPool(std::thread::hardware_concurrency() / 2);
 
-  std::cout << "Waiting for a client to connect...\n";
+  while (true) {
+    std::cout << std::unitbuf;
+    std::cerr << std::unitbuf;
 
-  int client_fd = client.acceptConnection(server_fd);
+    auto client = std::make_shared<Client>();
 
-  const std::string httpRawRequest = client.readRequest();
+    std::cout << "Waiting for a client to connect...\n";
 
-  const std::unique_ptr<HttpRequestParser::HttpRequest> httpRequest =
-      HttpRequestParser::parse(httpRawRequest);
+    int client_fd = client->acceptConnection(server_fd);
 
-  // std::cout << "REQUEST: \n" << *httpRequest << "\nEND\n";
+    threadPool.enqueue([client]() -> void {
+      const std::string httpRawRequest = client->readRequest();
 
-  std::regex echoPathEndpointRegex("^/echo/([^/]+)$");
-  std::regex userAgentEndpointRegex("/user-agent");
-  std::smatch match;
+      const auto httpRequest = HttpRequestParser::parse(httpRawRequest);
 
-  if (httpRequest->path == "/") {
-    std::string httpResponse = "HTTP/1.1 200 OK\r\n\r\n";
-    client.repond(httpResponse);
+      std::cout << "\nREQUEST: \n" << *httpRequest << "\nEND\n";
 
-  } else if (std::regex_search(httpRequest->path, match,
-                               echoPathEndpointRegex)) {
-    std::string body;
+      std::smatch match;
 
-    for (auto it = match.begin() + 1; it != match.end(); ++it) {
-      body += *it;
-    }
+      if (httpRequest->path == "/") {
+        std::string httpResponse = HttpResponseBuilder().build().toString();
+        client->repond(httpResponse);
 
-    std::string httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: "
-                               "text/plain\r\nContent-Length: ";
-    httpResponse += std::to_string(body.size()) + "\r\n\r\n" + body;
+      } else if (std::regex_search(httpRequest->path, match,
+                                   std::regex("^/echo/([^/]+)$"))) {
 
-    client.repond(httpResponse);
-  } else if (std::regex_search(httpRequest->path, match,
-                               userAgentEndpointRegex)) {
-    const std::string &userAgent = httpRequest->headers["User-Agent"];
-    std::string httpResponse = "HTTP/1.1 200 OK\r\nContent-Type: "
-                               "text/plain\r\nContent-Length: ";
-    httpResponse += std::to_string(userAgent.size()) + "\r\n\r\n" + userAgent;
+        const std::string httpResponse =
+            HttpResponseBuilder()
+                .addHeader("Content-Type", "text/plain")
+                .setBody(match[1])
+                .build()
+                .toString();
 
-    client.repond(httpResponse);
-  } else {
-    std::string httpResponse = "HTTP/1.1 404 Not Found\r\n\r\n";
-    client.repond(httpResponse);
+        client->repond(httpResponse);
+      } else if (std::regex_search(httpRequest->path, match,
+                                   std::regex("/user-agent"))) {
+
+        const std::string &userAgent = httpRequest->headers["User-Agent"];
+
+        const std::string httpResponse =
+            HttpResponseBuilder()
+                .addHeader("Content-Type", "text/plain")
+                .setBody(userAgent)
+                .build()
+                .toString();
+
+        client->repond(httpResponse);
+      } else {
+        const std::string httpResponse = HttpResponseBuilder()
+                                             .setStatus(404, "Not Found")
+                                             .build()
+                                             .toString();
+        client->repond(httpResponse);
+      }
+
+      std::cout << "Client connected\n\n";
+    });
   }
-
-  std::cout << "Client connected\n";
 
   return 0;
 }

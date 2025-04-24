@@ -6,9 +6,9 @@
 
 class Server {
 private:
-  int server_fd;
-  struct sockaddr_in server_addr;
-  int reuse;
+  int server_fd = -1;
+  struct sockaddr_in server_addr = {};
+  int reuse = -1;
   int port;
 
 public:
