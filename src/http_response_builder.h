@@ -46,6 +46,10 @@ public:
   }
 
   HttpResponse build() {
+    if (response.headers.find("Content-Length") == response.headers.end()) {
+      response.headers["Content-Length"] = std::to_string(response.body.size());
+    }
+
     if (keepAlive) {
       response.headers["Connection"] = "keep-alive";
       if (keepAliveTimeout > 0) {

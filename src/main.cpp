@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
   server.bindPort();
   server.listenSocket();
 
-  ThreadPool threadPool(std::thread::hardware_concurrency() / 2);
+  ThreadPool threadPool(std::thread::hardware_concurrency() * 2);
 
   while (true) {
     std::cout << std::unitbuf;
